@@ -1,13 +1,3 @@
---[[
-TODO: 
-- [BUG] Remove the buffer from the list when we exit terminal.
-- [FEATURE] Make usable with lazy
-- [FEATURE] Load proper shell env
-- [FEATURE] D for delete with confirmation
-- [FEATURE] N for new
-- [FEATURE] Add resize support
-]]
-
 local state = {
     floating = {
         current_buf = -1,
