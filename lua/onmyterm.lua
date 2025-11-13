@@ -1,9 +1,11 @@
 --[[
 TODO: 
-- Make sure we remove the buffer from the list when we exit terminal.
-- D for delete with confirmation
-- N for new
-- Add resize support
+- [BUG] Remove the buffer from the list when we exit terminal.
+- [FEATURE] Make usable with lazy
+- [FEATURE] Load proper shell env
+- [FEATURE] D for delete with confirmation
+- [FEATURE] N for new
+- [FEATURE] Add resize support
 ]]
 
 local state = {
