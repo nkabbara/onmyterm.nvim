@@ -77,7 +77,7 @@ M.new_term = function()
     vim.api.nvim_win_set_buf(win, buf)
     if not is_term(buf) then
         -- TODO I think I know why TermClose is not firing. We are removing the or killing the buffer
-        -- when we type exit. And if you read the manual of create_autocmd it says
+        -- when we type exit. And if you read the manual of terminal-status it says
         -- a note if we assign a buffer and we kill it we lose its autocommands. We might need to implement
         -- a wait or something. See below and look lines below up in help
         --- The |TermClose| event gives the terminal job exit code in the |v:event|
@@ -116,7 +116,7 @@ M.toggle_term = function()
     if not vim.api.nvim_win_is_valid(state.floating.win) then
         local floating = create_floating_window({ buf = state.floating.current_buf })
 
-        state.floating.current_buf = floating.current_buf
+        -- I think this line is unnecesary.
         state.floating.win = floating.win
         if not is_term(floating.current_buf) then
             M.new_term()
