@@ -44,7 +44,8 @@ local function create_floating_window(opts)
     local col = math.floor((ui.width - width) / 2)
 
     local buf = nil
-    if vim.api.nvim_buf_is_valid(opts.buf) then
+    if opts.buf ~= -1 or vim.api.nvim_buf_is_valid(opts.buf) then
+        -- vim.notify("we are not creating n buf" .. opts.buf)
         buf = opts.buf
     else
         buf = vim.api.nvim_create_buf(false, true)
@@ -76,25 +77,25 @@ M.new_term = function()
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_win_set_buf(win, buf)
     if not is_term(buf) then
-        -- TODO I think I know why TermClose is not firing. We are removing the or killing the buffer
-        -- when we type exit. And if you read the manual of create_autocmd it says
-        -- a note if we assign a buffer and we kill it we lose its autocommands. We might need to implement
-        -- a wait or something. See below and look lines below up in help
-        --- The |TermClose| event gives the terminal job exit code in the |v:event|
-        -- "status" field. For example, this autocommand outputs the terminal's exit
-        --code to |:messages|: >vim
-        -- autocmd TermClose * echom 'Terminal exited with status '..v:event.status
-
-        -- Use --|jobwait()| to check if the terminal job has finished: >vim
-        --
-        --let running = jobwait([&channel], 0)[0] == -1
         vim.cmd.terminal()
         vim.cmd("startinsert")
         -- TermClose event doesn't work. Probably due to autocmds being wiped after buf destruction.
         vim.api.nvim_create_autocmd({ "BufWipeout" }, {
-            callback = function(ev)
-                vim.notify("hi there! TermClose for " .. buf, vim.log.levels.INFO)
-                vim.notify(vim.inspect(ev))
+            callback = function(args)
+                -- I need to delete the buffer that we just exited.
+                vim.notify("killing buffer: " .. args.buf .. "buf array size:" .. #state.floating.bufs)
+                for i, v in ipairs(state.floating.bufs) do
+                    if v == args.buf then
+                        table.remove(state.floating.bufs, i)
+                    end
+                end
+                if #state.floating.bufs ~= 0 then
+                    -- TODO continue from here. to repro, open terminal, then create anothe, kill one, then toggle again. It'll error out.
+                    vim.notify("we are setting to first buf:")
+                    state.floating.current_buf = state.floating.bufs[0]
+                else
+                    state.floating.current_buf = -1
+                end
             end,
             buffer = buf,
         })
