@@ -45,7 +45,6 @@ local function create_floating_window(opts)
 
     local buf = nil
     if opts.buf ~= -1 or vim.api.nvim_buf_is_valid(opts.buf) then
-        -- vim.notify("we are not creating n buf" .. opts.buf)
         buf = opts.buf
     else
         buf = vim.api.nvim_create_buf(false, true)
@@ -82,17 +81,13 @@ M.new_term = function()
         -- TermClose event doesn't work. Probably due to autocmds being wiped after buf destruction.
         vim.api.nvim_create_autocmd({ "BufWipeout" }, {
             callback = function(args)
-                -- I need to delete the buffer that we just exited.
-                vim.notify("killing buffer: " .. args.buf .. "buf array size:" .. #state.floating.bufs)
                 for i, v in ipairs(state.floating.bufs) do
                     if v == args.buf then
                         table.remove(state.floating.bufs, i)
                     end
                 end
                 if #state.floating.bufs ~= 0 then
-                    -- TODO continue from here. to repro, open terminal, then create anothe, kill one, then toggle again. It'll error out.
-                    vim.notify("we are setting to first buf:")
-                    state.floating.current_buf = state.floating.bufs[0]
+                    state.floating.current_buf = state.floating.bufs[1]
                 else
                     state.floating.current_buf = -1
                 end
