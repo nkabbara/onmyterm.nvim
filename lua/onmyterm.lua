@@ -114,7 +114,6 @@ M.toggle_term = function()
     if not vim.api.nvim_win_is_valid(state.floating.win) then
         local floating = create_floating_window({ buf = state.floating.current_buf })
 
-        -- I think this line is unnecesary/
         state.floating.current_buf = floating.current_buf
         state.floating.win = floating.win
         if not is_term(floating.current_buf) then
