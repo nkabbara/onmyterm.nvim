@@ -108,6 +108,10 @@ M.new_term = function()
     vim.keymap.set("n", "q", function()
         vim.api.nvim_win_hide(state.floating.win)
     end, { buffer = vim.api.nvim_get_current_buf(), desc = "prev term " })
+
+    vim.keymap.set("n", "N", function()
+        M.new_term()
+    end, { buffer = vim.api.nvim_get_current_buf(), desc = "prev term " })
 end
 
 M.toggle_term = function()
@@ -125,4 +129,3 @@ M.toggle_term = function()
 end
 
 return M
-
