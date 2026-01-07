@@ -1,9 +1,11 @@
 vim.api.nvim_create_user_command("OnMyTerm", function()
     require("onmyterm").toggle_term()
 end, {})
+
 vim.keymap.set("n", "<leader>tt", function()
     require("onmyterm").toggle_term()
 end, { desc = "Toggle terminal" })
+
 vim.keymap.set("n", "<leader>tn", function()
     require("onmyterm").toggle_term()
     require("onmyterm").new_term()

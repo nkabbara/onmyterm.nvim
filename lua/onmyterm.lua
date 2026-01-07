@@ -20,14 +20,15 @@ end
 
 local shift_term = function(shift_by)
     local idx = idx_of(state.floating.bufs, state.floating.current_buf)
-
     if not idx then
         return
     end
+
     local current_buf = state.floating.bufs[idx + shift_by]
     if not current_buf then
         return
     end
+
     vim.api.nvim_win_set_buf(state.floating.win, current_buf)
     state.floating.current_buf = current_buf
 end
@@ -43,7 +44,7 @@ local function create_floating_window(opts)
     local col = math.floor((ui.width - width) / 2)
 
     local buf = nil
-    if vim.api.nvim_buf_is_valid(opts.buf) then
+    if opts.buf ~= -1 or vim.api.nvim_buf_is_valid(opts.buf) then
         buf = opts.buf
     else
         buf = vim.api.nvim_create_buf(false, true)
@@ -77,6 +78,22 @@ M.new_term = function()
     if not is_term(buf) then
         vim.cmd.terminal()
         vim.cmd("startinsert")
+        -- TermClose event doesn't work. Probably due to autocmds being wiped after buf destruction.
+        vim.api.nvim_create_autocmd({ "BufWipeout" }, {
+            callback = function(args)
+                for i, v in ipairs(state.floating.bufs) do
+                    if v == args.buf then
+                        table.remove(state.floating.bufs, i)
+                    end
+                end
+                if #state.floating.bufs ~= 0 then
+                    state.floating.current_buf = state.floating.bufs[1]
+                else
+                    state.floating.current_buf = -1
+                end
+            end,
+            buffer = buf,
+        })
     end
     state.floating.current_buf = buf
     table.insert(state.floating.bufs, buf)
@@ -108,3 +125,4 @@ M.toggle_term = function()
 end
 
 return M
+
