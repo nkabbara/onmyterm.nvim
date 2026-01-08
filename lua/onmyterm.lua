@@ -122,6 +122,8 @@ M.toggle_term = function()
         state.floating.win = floating.win
         if not is_term(floating.current_buf) then
             M.new_term()
+        else
+            vim.cmd("startinsert")
         end
     else
         vim.api.nvim_win_hide(state.floating.win)
