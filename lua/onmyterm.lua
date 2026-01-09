@@ -62,8 +62,6 @@ local function create_floating_window(opts)
 
     local win = vim.api.nvim_open_win(buf, true, win_opts)
 
-    vim.api.nvim_buf_set_keymap(buf, "n", "q", ":q<CR>", { noremap = true, silent = true })
-
     return { current_buf = buf, win = win }
 end
 
@@ -80,7 +78,7 @@ M.new_term = function()
         vim.cmd("startinsert")
         -- TermClose event doesn't work. Probably due to autocmds being wiped after buf destruction.
         vim.api.nvim_create_autocmd({ "BufWipeout" }, {
-            callback = function(args)
+            callback = function(args) -- when user exits a buffer remove from our buf array.
                 for i, v in ipairs(state.floating.bufs) do
                     if v == args.buf then
                         table.remove(state.floating.bufs, i)
@@ -91,6 +89,13 @@ M.new_term = function()
                 else
                     state.floating.current_buf = -1
                 end
+            end,
+            buffer = buf,
+        })
+        -- TermEnter & TermLeave
+        vim.api.nvim_create_autocmd({ "TermLeave", "TermEnter" }, {
+            callback = function(ctx)
+                M.set_win_style(ctx)
             end,
             buffer = buf,
         })
@@ -107,11 +112,11 @@ M.new_term = function()
 
     vim.keymap.set("n", "q", function()
         vim.api.nvim_win_hide(state.floating.win)
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "prev term " })
+    end, { buffer = vim.api.nvim_get_current_buf(), desc = "hide term" })
 
-    vim.keymap.set("n", "N", function()
+    vim.keymap.set("n", "C", function()
         M.new_term()
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "prev term " })
+    end, { buffer = vim.api.nvim_get_current_buf(), desc = "new term " })
 end
 
 M.toggle_term = function()
@@ -128,6 +133,25 @@ M.toggle_term = function()
     else
         vim.api.nvim_win_hide(state.floating.win)
     end
+end
+
+M.set_win_style = function(ctx)
+    local winid = state.floating.win
+    if not vim.api.nvim_win_is_valid(winid) then
+        return
+    end
+
+    local cfg = vim.api.nvim_win_get_config(winid)
+
+    if ctx.event == "TermLeave" then
+        cfg.border = "double"
+        vim.wo[winid].cursorline = true
+    else
+        cfg.border = "single"
+        vim.wo[winid].cursorline = false
+    end
+
+    vim.api.nvim_win_set_config(winid, cfg)
 end
 
 return M
