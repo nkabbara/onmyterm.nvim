@@ -9,6 +9,9 @@ local state = {
     },
 }
 
+local DEFAULT_WINBLEND = 0
+local FADED_WINBLEND = 60
+
 local idx_of = function(list, value)
     for i, v in ipairs(list) do
         if v == value then
@@ -168,10 +171,10 @@ M.toggle_transparency = function()
         return
     end
 
-    if vim.wo[winid].winblend ~= 0 then
-        vim.wo[winid].winblend = 0
+    if vim.wo[winid].winblend ~= DEFAULT_WINBLEND then
+        vim.wo[winid].winblend = DEFAULT_WINBLEND
     else
-        vim.wo[winid].winblend = 60
+        vim.wo[winid].winblend = FADED_WINBLEND
     end
 end
 
