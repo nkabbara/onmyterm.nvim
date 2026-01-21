@@ -61,6 +61,8 @@ local function create_floating_window(opts)
     }
 
     local win = vim.api.nvim_open_win(buf, true, win_opts)
+    -- reset toggle_transparency()
+    vim.wo[win].winblend = 0
 
     return { current_buf = buf, win = win }
 end
@@ -121,6 +123,10 @@ M.set_keymaps = function(buf)
     vim.keymap.set("n", "C", function()
         M.new_term()
     end, { buffer = buf, desc = "new term " })
+
+    vim.keymap.set("n", "t", function()
+        M.toggle_transparency()
+    end, { buffer = buf, desc = "new term " })
 end
 
 M.toggle_term = function()
@@ -149,13 +155,24 @@ M.set_win_style = function(ctx)
 
     if ctx.event == "TermLeave" then
         cfg.border = "double"
-        vim.wo[winid].cursorline = true
     else
         cfg.border = "single"
-        vim.wo[winid].cursorline = false
     end
 
     vim.api.nvim_win_set_config(winid, cfg)
+end
+
+M.toggle_transparency = function()
+    local winid = state.floating.win
+    if not vim.api.nvim_win_is_valid(winid) then
+        return
+    end
+
+    if vim.wo[winid].winblend ~= 0 then
+        vim.wo[winid].winblend = 0
+    else
+        vim.wo[winid].winblend = 60
+    end
 end
 
 return M
