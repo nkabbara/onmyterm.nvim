@@ -103,20 +103,24 @@ M.new_term = function()
     state.floating.current_buf = buf
     table.insert(state.floating.bufs, buf)
 
+    M.set_keymaps(buf)
+end
+
+M.set_keymaps = function(buf)
     vim.keymap.set("n", "n", function()
         shift_term(1)
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "next term " })
+    end, { buffer = buf, desc = "next term " })
     vim.keymap.set("n", "p", function()
         shift_term(-1)
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "prev term " })
+    end, { buffer = buf, desc = "prev term " })
 
     vim.keymap.set("n", "q", function()
         vim.api.nvim_win_hide(state.floating.win)
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "hide term" })
+    end, { buffer = buf, desc = "hide term" })
 
     vim.keymap.set("n", "C", function()
         M.new_term()
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "new term " })
+    end, { buffer = buf, desc = "new term " })
 end
 
 M.toggle_term = function()
