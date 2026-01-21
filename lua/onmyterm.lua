@@ -9,6 +9,9 @@ local state = {
     },
 }
 
+local DEFAULT_WINBLEND = 0
+local FADED_WINBLEND = 60
+
 local idx_of = function(list, value)
     for i, v in ipairs(list) do
         if v == value then
@@ -61,6 +64,8 @@ local function create_floating_window(opts)
     }
 
     local win = vim.api.nvim_open_win(buf, true, win_opts)
+    -- reset toggle_transparency()
+    vim.wo[win].winblend = 0
 
     return { current_buf = buf, win = win }
 end
@@ -103,20 +108,28 @@ M.new_term = function()
     state.floating.current_buf = buf
     table.insert(state.floating.bufs, buf)
 
+    M.set_keymaps(buf)
+end
+
+M.set_keymaps = function(buf)
     vim.keymap.set("n", "n", function()
         shift_term(1)
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "next term " })
+    end, { buffer = buf, desc = "next term " })
     vim.keymap.set("n", "p", function()
         shift_term(-1)
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "prev term " })
+    end, { buffer = buf, desc = "prev term " })
 
     vim.keymap.set("n", "q", function()
         vim.api.nvim_win_hide(state.floating.win)
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "hide term" })
+    end, { buffer = buf, desc = "hide term" })
 
     vim.keymap.set("n", "C", function()
         M.new_term()
-    end, { buffer = vim.api.nvim_get_current_buf(), desc = "new term " })
+    end, { buffer = buf, desc = "new term " })
+
+    vim.keymap.set("n", "t", function()
+        M.toggle_transparency()
+    end, { buffer = buf, desc = "new term " })
 end
 
 M.toggle_term = function()
@@ -145,13 +158,24 @@ M.set_win_style = function(ctx)
 
     if ctx.event == "TermLeave" then
         cfg.border = "double"
-        vim.wo[winid].cursorline = true
     else
         cfg.border = "single"
-        vim.wo[winid].cursorline = false
     end
 
     vim.api.nvim_win_set_config(winid, cfg)
+end
+
+M.toggle_transparency = function()
+    local winid = state.floating.win
+    if not vim.api.nvim_win_is_valid(winid) then
+        return
+    end
+
+    if vim.wo[winid].winblend ~= DEFAULT_WINBLEND then
+        vim.wo[winid].winblend = DEFAULT_WINBLEND
+    else
+        vim.wo[winid].winblend = FADED_WINBLEND
+    end
 end
 
 return M
