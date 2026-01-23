@@ -79,28 +79,18 @@ M.new_term = function()
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_win_set_buf(win, buf)
     if not is_term(buf) then
-        vim.cmd.terminal()
+        local shell = os.getenv("SHELL")
+        vim.cmd.terminal(shell)
         vim.cmd("startinsert")
-        -- TermClose event doesn't work. Probably due to autocmds being wiped after buf destruction.
-        vim.api.nvim_create_autocmd({ "BufWipeout" }, {
-            callback = function(args) -- when user exits a buffer remove from our buf array.
-                for i, v in ipairs(state.floating.bufs) do
-                    if v == args.buf then
-                        table.remove(state.floating.bufs, i)
-                    end
-                end
-                if #state.floating.bufs ~= 0 then
-                    state.floating.current_buf = state.floating.bufs[1]
-                else
-                    state.floating.current_buf = -1
-                end
-            end,
-            buffer = buf,
-        })
-        -- TermEnter & TermLeave
         vim.api.nvim_create_autocmd({ "TermLeave", "TermEnter" }, {
             callback = function(ctx)
                 M.set_win_style(ctx)
+            end,
+            buffer = buf,
+        })
+        vim.api.nvim_create_autocmd({ "TermClose" }, {
+            callback = function(ctx)
+                M.delete_buffer(ctx.buf)
             end,
             buffer = buf,
         })
@@ -130,6 +120,43 @@ M.set_keymaps = function(buf)
     vim.keymap.set("n", "t", function()
         M.toggle_transparency()
     end, { buffer = buf, desc = "new term " })
+
+    vim.keymap.set("n", "D", function()
+        M.delete_buffer(buf, true)
+    end, { buffer = buf, desc = "new term " })
+end
+
+M.delete_buffer = function(buf, confirm)
+    local buf_idx = idx_of(state.floating.bufs, buf)
+    if not buf_idx then -- buf_delete below calls this function recursively. This ensures we have a way out.
+        return
+    end
+
+    if confirm then
+        local choice = vim.fn.confirm("Are you sure?", "&Yes\n&No", 2)
+        if choice == 2 then
+            return
+        end
+    end
+
+    local new_idx
+    if #state.floating.bufs == 1 then
+        state.floating.current_buf = -1
+    else
+        if state.floating.bufs[buf_idx - 1] ~= nil then
+            new_idx = buf_idx - 1
+        else
+            new_idx = buf_idx + 1
+        end
+        state.floating.current_buf = state.floating.bufs[new_idx]
+        vim.api.nvim_set_current_buf(state.floating.current_buf)
+        vim.defer_fn(function()
+            vim.cmd("startinsert")
+        end, 10)
+    end
+
+    table.remove(state.floating.bufs, buf_idx) -- ensure this is called before buf_delete so we don't loop in recrsion.
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
 end
 
 M.toggle_term = function()
