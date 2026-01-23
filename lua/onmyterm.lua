@@ -139,7 +139,13 @@ end
 
 M.delete_buffer = function(buf)
     if #state.floating.bufs == 1 then
-        -- close window and destroy buffer
+        local ok, err = pcall(vim.api.nvim_buf_delete, buf, {})
+        if not ok then
+            if type(err) == "string" and err:match("Failed to unload buffer") then
+                return
+            end
+            error(err)
+        end
     else
         local buf_idx = idx_of(state.floating.bufs, buf)
         if state.floating.bufs[buf_idx - 1] ~= nil then
