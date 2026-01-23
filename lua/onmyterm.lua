@@ -83,18 +83,7 @@ M.new_term = function()
         vim.cmd("startinsert")
         -- TermClose event doesn't work. Probably due to autocmds being wiped after buf destruction.
         vim.api.nvim_create_autocmd({ "BufWipeout" }, {
-            callback = function(args) -- when user exits a buffer remove from our buf array.
-                for i, v in ipairs(state.floating.bufs) do
-                    if v == args.buf then
-                        table.remove(state.floating.bufs, i)
-                    end
-                end
-                if #state.floating.bufs ~= 0 then
-                    state.floating.current_buf = state.floating.bufs[1]
-                else
-                    state.floating.current_buf = -1
-                end
-            end,
+            callback = M.cleanup,
             buffer = buf,
         })
         -- TermEnter & TermLeave
@@ -130,6 +119,36 @@ M.set_keymaps = function(buf)
     vim.keymap.set("n", "t", function()
         M.toggle_transparency()
     end, { buffer = buf, desc = "new term " })
+
+    vim.keymap.set("n", "D", function()
+        M.delete_buffer(buf)
+    end, { buffer = buf, desc = "new term " })
+end
+
+M.cleanup = function(args)
+    local buf_idx = idx_of(state.floating.bufs, args.buf)
+    if buf_idx ~= nil then
+        table.remove(state.floating.bufs, buf_idx)
+    end
+    if #state.floating.bufs ~= 0 then
+        state.floating.current_buf = state.floating.bufs[1]
+    else
+        state.floating.current_buf = -1
+    end
+end
+
+M.delete_buffer = function(buf)
+    if #state.floating.bufs == 1 then
+        -- close window and destroy buffer
+    else
+        local buf_idx = idx_of(state.floating.bufs, buf)
+        if state.floating.bufs[buf_idx - 1] ~= nil then
+            vim.api.nvim_set_current_buf(state.floating.bufs[buf_idx - 1])
+        else
+            vim.api.nvim_set_current_buf(state.floating.bufs[buf_idx + 1])
+        end
+        M.cleanup({ buf = buf })
+    end
 end
 
 M.toggle_term = function()
