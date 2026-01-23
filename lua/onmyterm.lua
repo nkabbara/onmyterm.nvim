@@ -138,14 +138,13 @@ M.cleanup = function(args)
 end
 
 M.delete_buffer = function(buf)
+    local choice = vim.fn.confirm("Are you sure?", "&Yes\n&No", 2)
+    if choice == 2 then
+        return
+    end
+
     if #state.floating.bufs == 1 then
-        local ok, err = pcall(vim.api.nvim_buf_delete, buf, {})
-        if not ok then
-            if type(err) == "string" and err:match("Failed to unload buffer") then
-                return
-            end
-            error(err)
-        end
+        vim.api.nvim_buf_delete(buf, { force = true })
     else
         local buf_idx = idx_of(state.floating.bufs, buf)
         if state.floating.bufs[buf_idx - 1] ~= nil then
