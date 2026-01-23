@@ -83,6 +83,10 @@ M.new_term = function()
         vim.cmd("startinsert")
         -- TermClose event doesn't work. Probably due to autocmds being wiped after buf destruction.
         vim.api.nvim_create_autocmd({ "BufWipeout" }, {
+            callback = function(args) end,
+            buffer = buf,
+        })
+        vim.api.nvim_create_autocmd({ "BufWipeout" }, {
             callback = M.cleanup,
             buffer = buf,
         })
