@@ -79,21 +79,18 @@ M.new_term = function()
     local buf = vim.api.nvim_create_buf(false, true)
     vim.api.nvim_win_set_buf(win, buf)
     if not is_term(buf) then
-        vim.cmd.terminal()
+        local shell = os.getenv("SHELL")
+        vim.cmd.terminal(shell)
         vim.cmd("startinsert")
-        -- TermClose event doesn't work. Probably due to autocmds being wiped after buf destruction.
-        vim.api.nvim_create_autocmd({ "BufWipeout" }, {
-            callback = function(args) end,
-            buffer = buf,
-        })
-        vim.api.nvim_create_autocmd({ "BufWipeout" }, {
-            callback = M.cleanup,
-            buffer = buf,
-        })
-        -- TermEnter & TermLeave
         vim.api.nvim_create_autocmd({ "TermLeave", "TermEnter" }, {
             callback = function(ctx)
                 M.set_win_style(ctx)
+            end,
+            buffer = buf,
+        })
+        vim.api.nvim_create_autocmd({ "TermClose" }, {
+            callback = function(ctx)
+                M.delete_buffer(ctx.buf)
             end,
             buffer = buf,
         })
@@ -125,39 +122,32 @@ M.set_keymaps = function(buf)
     end, { buffer = buf, desc = "new term " })
 
     vim.keymap.set("n", "D", function()
-        M.delete_buffer(buf)
+        M.delete_buffer(buf, true)
     end, { buffer = buf, desc = "new term " })
 end
 
-M.cleanup = function(args)
-    local buf_idx = idx_of(state.floating.bufs, args.buf)
-    if buf_idx ~= nil then
-        table.remove(state.floating.bufs, buf_idx)
+M.delete_buffer = function(buf, confirm)
+    if confirm then
+        local choice = vim.fn.confirm("Are you sure?", "&Yes\n&No", 2)
+        if choice == 2 then
+            return
+        end
     end
-    if #state.floating.bufs ~= 0 then
-        state.floating.current_buf = state.floating.bufs[1]
-    else
-        state.floating.current_buf = -1
-    end
-end
-
-M.delete_buffer = function(buf)
-    local choice = vim.fn.confirm("Are you sure?", "&Yes\n&No", 2)
-    if choice == 2 then
-        return
-    end
+    local buf_idx = idx_of(state.floating.bufs, buf)
 
     if #state.floating.bufs == 1 then
-        vim.api.nvim_buf_delete(buf, { force = true })
+        state.floating.current_buf = -1
+        vim.api.nvim_buf_delete(buf, { unload = true })
     else
-        local buf_idx = idx_of(state.floating.bufs, buf)
         if state.floating.bufs[buf_idx - 1] ~= nil then
-            vim.api.nvim_set_current_buf(state.floating.bufs[buf_idx - 1])
+            state.floating.current_buf = state.floating.bufs[buf_idx - 1]
+            vim.api.nvim_set_current_buf(state.floating.current_buf)
         else
-            vim.api.nvim_set_current_buf(state.floating.bufs[buf_idx + 1])
+            state.floating.current_buf = state.floating.bufs[buf_idx + 1]
+            vim.api.nvim_set_current_buf(state.floating.current_buf)
         end
-        M.cleanup({ buf = buf })
     end
+    table.remove(state.floating.bufs, buf_idx)
 end
 
 M.toggle_term = function()
