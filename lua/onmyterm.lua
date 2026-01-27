@@ -127,27 +127,33 @@ M.set_keymaps = function(buf)
 end
 
 M.delete_buffer = function(buf, confirm)
+    local buf_idx = idx_of(state.floating.bufs, buf)
+    if not buf_idx then -- buf_delete below calls this function recursively. This ensures we have a way out.
+        return
+    end
+
     if confirm then
         local choice = vim.fn.confirm("Are you sure?", "&Yes\n&No", 2)
         if choice == 2 then
             return
         end
     end
-    local buf_idx = idx_of(state.floating.bufs, buf)
 
+    local new_idx
     if #state.floating.bufs == 1 then
         state.floating.current_buf = -1
-        vim.api.nvim_buf_delete(buf, { unload = true })
     else
         if state.floating.bufs[buf_idx - 1] ~= nil then
-            state.floating.current_buf = state.floating.bufs[buf_idx - 1]
-            vim.api.nvim_set_current_buf(state.floating.current_buf)
+            new_idx = buf_idx - 1
         else
-            state.floating.current_buf = state.floating.bufs[buf_idx + 1]
-            vim.api.nvim_set_current_buf(state.floating.current_buf)
+            new_idx = buf_idx + 1
         end
+        state.floating.current_buf = state.floating.bufs[new_idx]
+        vim.api.nvim_set_current_buf(state.floating.current_buf)
     end
-    table.remove(state.floating.bufs, buf_idx)
+
+    table.remove(state.floating.bufs, buf_idx) -- ensure this is called before buf_delete so we don't loop in recrsion.
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
 end
 
 M.toggle_term = function()
