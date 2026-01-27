@@ -10,7 +10,7 @@ local state = {
 }
 
 local DEFAULT_WINBLEND = 0
-local FADED_WINBLEND = 60
+local FADED_WINBLEND = 90
 
 local idx_of = function(list, value)
     for i, v in ipairs(list) do
