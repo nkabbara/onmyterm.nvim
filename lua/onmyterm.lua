@@ -150,6 +150,9 @@ M.delete_buffer = function(buf, confirm)
         end
         state.floating.current_buf = state.floating.bufs[new_idx]
         vim.api.nvim_set_current_buf(state.floating.current_buf)
+        vim.defer_fn(function()
+            vim.cmd("startinsert")
+        end, 10)
     end
 
     table.remove(state.floating.bufs, buf_idx) -- ensure this is called before buf_delete so we don't loop in recrsion.
