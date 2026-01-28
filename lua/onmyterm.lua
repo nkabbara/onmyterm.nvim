@@ -5,7 +5,6 @@ local state = {
         current_buf = -1,
         win = -1,
         bufs = {},
-        wins = {},
     },
 }
 
@@ -39,12 +38,22 @@ end
 local function create_floating_window(opts)
     opts = opts or {}
 
-    local ui = vim.api.nvim_list_uis()[1]
-    local width = opts.width or math.floor(ui.width * 0.8)
-    local height = opts.height or math.floor(ui.height * 0.8)
+    local calc_dims = function()
+        local ui = vim.api.nvim_list_uis()[1]
+        local width = math.floor(ui.width * 0.8)
+        local height = math.floor(ui.height * 0.8)
 
-    local row = math.floor((ui.height - height) / 2)
-    local col = math.floor((ui.width - width) / 2)
+        local row = math.floor((ui.height - height) / 2)
+        local col = math.floor((ui.width - width) / 2)
+        local win_opts = {
+            relative = "editor",
+            width = width,
+            height = height,
+            row = row,
+            col = col,
+        }
+        return win_opts
+    end
 
     local buf = nil
     if opts.buf ~= -1 or vim.api.nvim_buf_is_valid(opts.buf) then
@@ -54,18 +63,25 @@ local function create_floating_window(opts)
     end
 
     local win_opts = {
-        relative = "editor",
-        width = width,
-        height = height,
-        row = row,
-        col = col,
         style = "minimal",
         border = "rounded",
     }
+    win_opts = vim.tbl_extend("force", win_opts, calc_dims())
 
     local win = vim.api.nvim_open_win(buf, true, win_opts)
+
+    state.floating.win = win
+
     -- reset toggle_transparency()
     vim.wo[win].winblend = 0
+
+    vim.api.nvim_create_autocmd({ "WinResized" }, {
+        callback = function()
+            if vim.api.nvim_win_is_valid(state.floating.win) then
+                vim.api.nvim_win_set_config(state.floating.win, calc_dims())
+            end
+        end,
+    })
 
     return { current_buf = buf, win = win }
 end
@@ -164,7 +180,6 @@ M.toggle_term = function()
         local floating = create_floating_window({ buf = state.floating.current_buf })
 
         state.floating.current_buf = floating.current_buf
-        state.floating.win = floating.win
         if not is_term(floating.current_buf) then
             M.new_term()
         else
