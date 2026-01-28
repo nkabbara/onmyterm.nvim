@@ -10,6 +10,8 @@ local state = {
 
 local DEFAULT_WINBLEND = 0
 local FADED_WINBLEND = 90
+local WIN_WIDTH_RATIO = 0.8
+local WIN_HEIGHT_RATIO = 0.8
 
 local idx_of = function(list, value)
     for i, v in ipairs(list) do
@@ -18,6 +20,10 @@ local idx_of = function(list, value)
         end
     end
     return nil
+end
+
+local is_term = function(buf)
+    return vim.bo[buf].buftype == "terminal"
 end
 
 local shift_term = function(shift_by)
@@ -35,13 +41,30 @@ local shift_term = function(shift_by)
     state.floating.current_buf = current_buf
 end
 
+local set_win_style = function(ctx)
+    local winid = state.floating.win
+    if not vim.api.nvim_win_is_valid(winid) then
+        return
+    end
+
+    local cfg = vim.api.nvim_win_get_config(winid)
+
+    if ctx.event == "TermLeave" then
+        cfg.border = "double"
+    else
+        cfg.border = "single"
+    end
+
+    vim.api.nvim_win_set_config(winid, cfg)
+end
+
 local function create_floating_window(opts)
     opts = opts or {}
 
     local calc_dims = function()
         local ui = vim.api.nvim_list_uis()[1]
-        local width = math.floor(ui.width * 0.8)
-        local height = math.floor(ui.height * 0.8)
+        local width = math.floor(ui.width * WIN_WIDTH_RATIO)
+        local height = math.floor(ui.height * WIN_HEIGHT_RATIO)
 
         local row = math.floor((ui.height - height) / 2)
         local col = math.floor((ui.width - width) / 2)
@@ -56,7 +79,7 @@ local function create_floating_window(opts)
     end
 
     local buf = nil
-    if opts.buf ~= -1 or vim.api.nvim_buf_is_valid(opts.buf) then
+    if opts.buf and opts.buf ~= -1 and vim.api.nvim_buf_is_valid(opts.buf) then
         buf = opts.buf
     else
         buf = vim.api.nvim_create_buf(false, true)
@@ -70,15 +93,15 @@ local function create_floating_window(opts)
 
     local win = vim.api.nvim_open_win(buf, true, win_opts)
 
-    state.floating.win = win
-
     -- reset toggle_transparency()
     vim.wo[win].winblend = 0
 
+    local resize_group = vim.api.nvim_create_augroup("OnMyTermResize", { clear = true })
     vim.api.nvim_create_autocmd({ "WinResized" }, {
+        group = resize_group,
         callback = function()
-            if vim.api.nvim_win_is_valid(state.floating.win) then
-                vim.api.nvim_win_set_config(state.floating.win, calc_dims())
+            if vim.api.nvim_win_is_valid(win) then
+                vim.api.nvim_win_set_config(win, calc_dims())
             end
         end,
     })
@@ -86,63 +109,7 @@ local function create_floating_window(opts)
     return { current_buf = buf, win = win }
 end
 
-local is_term = function(buf)
-    return vim.bo[buf].buftype == "terminal"
-end
-
-M.new_term = function()
-    local win = state.floating.win
-    local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_win_set_buf(win, buf)
-    if not is_term(buf) then
-        local shell = os.getenv("SHELL")
-        vim.cmd.terminal(shell)
-        vim.cmd("startinsert")
-        vim.api.nvim_create_autocmd({ "TermLeave", "TermEnter" }, {
-            callback = function(ctx)
-                M.set_win_style(ctx)
-            end,
-            buffer = buf,
-        })
-        vim.api.nvim_create_autocmd({ "TermClose" }, {
-            callback = function(ctx)
-                M.delete_buffer(ctx.buf)
-            end,
-            buffer = buf,
-        })
-    end
-    state.floating.current_buf = buf
-    table.insert(state.floating.bufs, buf)
-
-    M.set_keymaps(buf)
-end
-
-M.set_keymaps = function(buf)
-    vim.keymap.set("n", "n", function()
-        shift_term(1)
-    end, { buffer = buf, desc = "next term " })
-    vim.keymap.set("n", "p", function()
-        shift_term(-1)
-    end, { buffer = buf, desc = "prev term " })
-
-    vim.keymap.set("n", "q", function()
-        vim.api.nvim_win_hide(state.floating.win)
-    end, { buffer = buf, desc = "hide term" })
-
-    vim.keymap.set("n", "C", function()
-        M.new_term()
-    end, { buffer = buf, desc = "new term " })
-
-    vim.keymap.set("n", "t", function()
-        M.toggle_transparency()
-    end, { buffer = buf, desc = "new term " })
-
-    vim.keymap.set("n", "D", function()
-        M.delete_buffer(buf, true)
-    end, { buffer = buf, desc = "new term " })
-end
-
-M.delete_buffer = function(buf, confirm)
+local delete_buffer = function(buf, confirm)
     local buf_idx = idx_of(state.floating.bufs, buf)
     if not buf_idx then -- buf_delete below calls this function recursively. This ensures we have a way out.
         return
@@ -175,11 +142,64 @@ M.delete_buffer = function(buf, confirm)
     pcall(vim.api.nvim_buf_delete, buf, { force = true })
 end
 
+local set_keymaps = function(buf)
+    vim.keymap.set("n", "n", function()
+        shift_term(1)
+    end, { buffer = buf, desc = "next term " })
+    vim.keymap.set("n", "p", function()
+        shift_term(-1)
+    end, { buffer = buf, desc = "prev term " })
+
+    vim.keymap.set("n", "q", function()
+        vim.api.nvim_win_hide(state.floating.win)
+    end, { buffer = buf, desc = "hide term" })
+
+    vim.keymap.set("n", "C", function()
+        M.new_term()
+    end, { buffer = buf, desc = "new term " })
+
+    vim.keymap.set("n", "t", function()
+        M.toggle_transparency()
+    end, { buffer = buf, desc = "toggle transparency" })
+
+    vim.keymap.set("n", "D", function()
+        delete_buffer(buf, true)
+    end, { buffer = buf, desc = "delete term" })
+end
+
+M.new_term = function()
+    local win = state.floating.win
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_win_set_buf(win, buf)
+    if not is_term(buf) then
+        local shell = os.getenv("SHELL")
+        vim.cmd.terminal(shell)
+        vim.cmd("startinsert")
+        vim.api.nvim_create_autocmd({ "TermLeave", "TermEnter" }, {
+            callback = function(ctx)
+                set_win_style(ctx)
+            end,
+            buffer = buf,
+        })
+        vim.api.nvim_create_autocmd({ "TermClose" }, {
+            callback = function(ctx)
+                delete_buffer(ctx.buf)
+            end,
+            buffer = buf,
+        })
+    end
+    state.floating.current_buf = buf
+    table.insert(state.floating.bufs, buf)
+
+    set_keymaps(buf)
+end
+
 M.toggle_term = function()
     if not vim.api.nvim_win_is_valid(state.floating.win) then
         local floating = create_floating_window({ buf = state.floating.current_buf })
 
         state.floating.current_buf = floating.current_buf
+        state.floating.win = floating.win
         if not is_term(floating.current_buf) then
             M.new_term()
         else
@@ -188,23 +208,6 @@ M.toggle_term = function()
     else
         vim.api.nvim_win_hide(state.floating.win)
     end
-end
-
-M.set_win_style = function(ctx)
-    local winid = state.floating.win
-    if not vim.api.nvim_win_is_valid(winid) then
-        return
-    end
-
-    local cfg = vim.api.nvim_win_get_config(winid)
-
-    if ctx.event == "TermLeave" then
-        cfg.border = "double"
-    else
-        cfg.border = "single"
-    end
-
-    vim.api.nvim_win_set_config(winid, cfg)
 end
 
 M.toggle_transparency = function()
