@@ -1,0 +1,58 @@
+# onmyterm.nvim
+
+An opinionated (i.e. I'm too lazy to make it configurable for you because it works for me), lightweight (i.e I'm too impatient to add features I don't need right now) floating terminal manager for Neovim.
+
+This plugin provides a simple workflow for managing multiple terminal instances in a floating window. It comes with sensible defaults and pre-configured keybindings designed for speed and efficiency.
+
+## Installation
+
+### [lazy.nvim](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+    "nkabbara/onmyterm.nvim"
+}
+```
+
+## Usage
+
+### Global Keymaps
+
+The plugin works out of the box with the following global shortcuts. You can disable these by setting `vim.g.onmyterm_disable_bindings = true`.
+
+| Key | Action | Description |
+| :--- | :--- | :--- |
+| `<leader>tt` | **Toggle Terminal** | Open or hide the floating terminal window. |
+| `<leader>tn` | **New Terminal** | Directly open a new terminal instance. |
+| `:OnMyTerm` | **Command** | Toggle the terminal via command mode. |
+
+#### Custom Configuration Example
+
+If you disable the default bindings, you can set your own:
+
+```lua
+-- Disable default keymaps
+vim.g.onmyterm_disable_bindings = true
+
+-- Set your own keymaps
+vim.keymap.set("n", "<C-t>", require("onmyterm").toggle_term, { desc = "Toggle Terminal" })
+```
+
+### Terminal Buffer Keymaps
+
+Once inside the terminal window, the following buffer-local shortcuts are available to manage your sessions:
+
+| Key | Action | Description |
+| :--- | :--- | :--- |
+| `n` | **Next Terminal** | Switch to the next terminal buffer in the list. |
+| `p` | **Previous Terminal** | Switch to the previous terminal buffer in the list. |
+| `C` | **Create New** | Create a new terminal instance and switch to it. |
+| `D` | **Delete** | Close the current terminal instance (prompts for confirmation). |
+| `t` | **Transparency** | Toggle the window transparency (ghost mode). |
+| `q` | **Hide** | Hide the floating window (backgrounds the terminal). |
+
+## Defaults
+
+* **Window Size**: 80% width and 80% height.
+* **Border**: "Double" when active, "Single" when inactive.
+* **Transparency**: Opaque by default; toggles to 90% transparent.
