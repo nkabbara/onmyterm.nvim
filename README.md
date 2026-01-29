@@ -1,8 +1,6 @@
 # onmyterm.nvim
 
-An opinionated (i.e. I'm too lazy to make it configurable for you because it works for me), lightweight (i.e I'm too impatient to add features I don't need right now) floating terminal manager for Neovim.
-
-This plugin provides a simple workflow for managing multiple terminal instances in a floating window. It comes with sensible defaults and pre-configured keybindings designed for speed and efficiency.
+This plugin provides a simple workflow for managing multiple terminal instances in a floating window. It comes with sensible defaults and pre-configured keybindings.
 
 ## Installation
 
