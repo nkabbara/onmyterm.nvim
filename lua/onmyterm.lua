@@ -43,18 +43,24 @@ end
 
 M.toggle_term = function()
     if not vim.api.nvim_win_is_valid(state.floating.win) then
-        local floating = create_floating_window({ buf = state.floating.current_buf })
-
-        state.floating.current_buf = floating.current_buf
-        state.floating.win = floating.win
-        if not is_term(floating.current_buf) then
+        M.open_term()
+        if not is_term(state.floating.current_buf) then
             M.new_term()
-        else
-            vim.cmd("startinsert")
         end
     else
         vim.api.nvim_win_hide(state.floating.win)
     end
+end
+
+M.open_term = function()
+    if vim.api.nvim_win_is_valid(state.floating.win) then
+        return
+    end
+
+    local floating = create_floating_window({ buf = state.floating.current_buf })
+
+    state.floating.current_buf = floating.current_buf
+    state.floating.win = floating.win
 end
 
 M.toggle_transparency = function()

@@ -7,6 +7,6 @@ vim.keymap.set("n", "<leader>tt", function()
 end, { desc = "Toggle terminal" })
 
 vim.keymap.set("n", "<leader>tn", function()
-    require("onmyterm").toggle_term()
+    require("onmyterm").open_term()
     require("onmyterm").new_term()
 end, { desc = "New terminal" })
