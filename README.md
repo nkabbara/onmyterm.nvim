@@ -1,6 +1,10 @@
 # onmyterm.nvim
 
-This plugin provides a simple workflow for managing multiple terminal instances in a floating window. It comes with sensible defaults and pre-configured keybindings.
+Plugin provides a simple workflow for managing multiple terminal instances in a floating window. It comes with sensible defaults and pre-configured keybindings.
+
+_I initially started this project to learn neovim's API, but as I did so, it started becoming useful enough to where I found myself using it regularly. I'm open to feature requests._
+
+With the exception to this readme, AI was used as I would have used google.
 
 ## Installation
 
