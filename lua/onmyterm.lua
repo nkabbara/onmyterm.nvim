@@ -13,7 +13,7 @@ local FADED_WINBLEND = 90
 local WIN_WIDTH_RATIO = 0.8
 local WIN_HEIGHT_RATIO = 0.8
 
--- Forward declarations
+-- Forward declarations. Is this idiomatic lua?
 local idx_of
 local is_term
 local shift_term

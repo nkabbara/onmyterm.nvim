@@ -1,4 +1,4 @@
-vim.api.nvim_create_user_command("OnMyTerm", function()
+vim.api.nvim_create_user_command("OnMyTermToggle", function()
     require("onmyterm").toggle_term()
 end, {})
 
