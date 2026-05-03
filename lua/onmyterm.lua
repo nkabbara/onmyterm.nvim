@@ -61,6 +61,10 @@ M.open_term = function()
 
     state.floating.current_buf = floating.current_buf
     state.floating.win = floating.win
+
+    if is_term(state.floating.current_buf) then
+        vim.cmd("startinsert")
+    end
 end
 
 M.toggle_transparency = function()
