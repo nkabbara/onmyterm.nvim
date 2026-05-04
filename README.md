@@ -12,7 +12,12 @@ With the exception to this readme, AI was used as I would have used google.
 
 ```lua
 {
-    "nkabbara/onmyterm.nvim"
+    "nkabbara/onmyterm.nvim",
+    config = function()
+        require("onmyterm").setup({
+            zindex = 1000,
+        })
+    end,
 }
 ```
 
@@ -46,6 +51,11 @@ If you disable the default bindings, you can set your own:
 -- Disable default keymaps
 vim.g.onmyterm_disable_bindings = true
 
+-- Keep the terminal above most other plugin floating windows
+require("onmyterm").setup({
+    zindex = 1000,
+})
+
 -- Set your own keymaps
 vim.keymap.set("n", "<C-t>", require("onmyterm").toggle_term, { desc = "Toggle Terminal" })
 ```
@@ -67,4 +77,5 @@ Once inside the terminal window, the following buffer-local shortcuts are availa
 
 * **Window Size**: 80% width and 80% height.
 * **Border**: "Double" when active, "Single" when inactive.
+* **Z-index**: `1000`, configurable with `require("onmyterm").setup({ zindex = 1000 })`.
 * **Transparency**: Opaque by default; toggles to 90% transparent.

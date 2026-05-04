@@ -10,6 +10,11 @@ local DEFAULT_WINBLEND = 0
 local FADED_WINBLEND = 90
 local WIN_WIDTH_RATIO = 0.8
 local WIN_HEIGHT_RATIO = 0.8
+local DEFAULT_ZINDEX = 1000
+
+local config = {
+    zindex = DEFAULT_ZINDEX,
+}
 
 -- Forward declarations. Is this idiomatic lua?
 local idx_of
@@ -31,6 +36,11 @@ local setup_term_events
 local setup_events
 
 -- Public API
+M.setup = function(opts)
+    opts = opts or {}
+    config = vim.tbl_extend("force", config, opts)
+end
+
 M.new_term = function()
     local tab = current_tab()
     local floating = get_tab_state(tab).floating
@@ -242,6 +252,7 @@ create_floating_window = function(opts)
     local win_opts = {
         style = "minimal",
         border = "rounded",
+        zindex = config.zindex,
     }
     win_opts = vim.tbl_extend("force", win_opts, calc_dims())
 
