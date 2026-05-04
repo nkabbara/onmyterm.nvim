@@ -26,7 +26,17 @@ The plugin works out of the box with the following global shortcuts. You can dis
 | :--- | :--- | :--- |
 | `<leader>tt` | **Toggle Terminal** | Open or hide the floating terminal window. |
 | `<leader>tn` | **New Terminal** | Directly open a new terminal instance. |
-| `:OnMyTerm` | **Command** | Toggle the terminal via command mode. |
+| `:OnMyTermToggle` | **Command** | Toggle the terminal via command mode. |
+
+### Tab-Scoped Terminals
+
+Each Vim tabpage gets its own isolated set of OnMyTerm terminals. Terminal indexes start over per tab, so terminal `1` in one tab is separate from terminal `1` in another tab.
+
+New terminals start in the tab-local working directory from `:tcd`. When a Vim tab is closed, OnMyTerm prompts before killing that tab's running terminals. You can disable that prompt with:
+
+```lua
+vim.g.onmyterm_confirm_tab_close = false
+```
 
 #### Custom Configuration Example
 
