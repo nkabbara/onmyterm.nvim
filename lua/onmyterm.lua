@@ -11,6 +11,31 @@ local FADED_WINBLEND = 90
 local WIN_WIDTH_RATIO = 0.8
 local WIN_HEIGHT_RATIO = 0.8
 local DEFAULT_ZINDEX = 1000
+local NORMAL_BORDER_HL = "OnMyTermNormalModeBorder"
+local TERMINAL_BORDER_HL = "OnMyTermTerminalModeBorder"
+local NORMAL_BORDER_COLOR = "#4f8680"
+local DEFAULT_BORDER_BG = "#000000"
+local DEFAULT_FLOAT_BORDER_COLOR = "#a6adc8"
+local NORMAL_MODE_BORDER = {
+    { "▛", NORMAL_BORDER_HL },
+    { "▔", NORMAL_BORDER_HL },
+    { "▜", NORMAL_BORDER_HL },
+    { "▕", NORMAL_BORDER_HL },
+    { "▟", NORMAL_BORDER_HL },
+    { "▁", NORMAL_BORDER_HL },
+    { "▙", NORMAL_BORDER_HL },
+    { "▏", NORMAL_BORDER_HL },
+}
+local TERMINAL_MODE_BORDER = {
+    { "▛", TERMINAL_BORDER_HL },
+    { "▔", TERMINAL_BORDER_HL },
+    { "▜", TERMINAL_BORDER_HL },
+    { "▕", TERMINAL_BORDER_HL },
+    { "▟", TERMINAL_BORDER_HL },
+    { "▁", TERMINAL_BORDER_HL },
+    { "▙", TERMINAL_BORDER_HL },
+    { "▏", TERMINAL_BORDER_HL },
+}
 
 local config = {
     zindex = DEFAULT_ZINDEX,
@@ -27,6 +52,8 @@ local current_floating
 local get_tab_cwd
 local shift_term
 local set_win_style
+local normal_bg
+local float_border_color
 local create_floating_window
 local delete_buffer
 local delete_tab_buffers
@@ -200,6 +227,24 @@ shift_term = function(shift_by)
     floating.current_buf = current_buf
 end
 
+normal_bg = function()
+    local normal = vim.api.nvim_get_hl(0, { name = "Normal" })
+    if normal and normal.bg then
+        return string.format("#%06x", normal.bg)
+    end
+
+    return DEFAULT_BORDER_BG
+end
+
+float_border_color = function()
+    local float_border = vim.api.nvim_get_hl(0, { name = "FloatBorder" })
+    if float_border and float_border.fg then
+        return string.format("#%06x", float_border.fg)
+    end
+
+    return DEFAULT_FLOAT_BORDER_COLOR
+end
+
 set_win_style = function(ctx)
     local tab_state = get_existing_tab_state(state.buf_tabs[ctx.buf] or current_tab())
     if not tab_state then
@@ -212,13 +257,17 @@ set_win_style = function(ctx)
     end
 
     local cfg = vim.api.nvim_win_get_config(winid)
+    local bg = normal_bg()
 
     if ctx.event == "TermLeave" then
-        cfg.border = "double"
+        vim.api.nvim_set_hl(0, NORMAL_BORDER_HL, { fg = NORMAL_BORDER_COLOR, bg = bg })
+        cfg.border = NORMAL_MODE_BORDER
     else
-        cfg.border = "single"
+        vim.api.nvim_set_hl(0, TERMINAL_BORDER_HL, { fg = float_border_color(), bg = bg })
+        cfg.border = TERMINAL_MODE_BORDER
     end
 
+    pcall(vim.api.nvim_set_option_value, "winhl", "", { win = winid })
     vim.api.nvim_win_set_config(winid, cfg)
 end
 
@@ -249,9 +298,11 @@ create_floating_window = function(opts)
         buf = vim.api.nvim_create_buf(false, true)
     end
 
+    vim.api.nvim_set_hl(0, TERMINAL_BORDER_HL, { fg = float_border_color(), bg = normal_bg() })
+
     local win_opts = {
         style = "minimal",
-        border = "rounded",
+        border = TERMINAL_MODE_BORDER,
         zindex = config.zindex,
     }
     win_opts = vim.tbl_extend("force", win_opts, calc_dims())
